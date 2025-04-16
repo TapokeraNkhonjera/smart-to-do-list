@@ -1,0 +1,8 @@
+<ul>
+    <li *ngFor="let task of tasks$ | async">
+      <input type="checkbox" [checked]="task.completed" (change)="toggle(task)">
+      <span [style.text-decoration]="task.completed ? 'line-through' : 'none'">{{ task.title }}</span>
+      <button (click)="remove(task)">❌</button>
+    </li>
+  </ul>
+  
