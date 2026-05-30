@@ -1,1 +1,150 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+  /* Provided Harmonious Color Palette */
+  --color-navy: #0D1846;
+  --color-blue: #406EB7;
+  --color-orange: #E95623;
+  --color-off-white: #E3E3E3;
+  
+  /* UI Specific Mappings */
+  --bg-canvas: #F8F9FA;
+  --bg-card: #FFFFFF;
+  --bg-hover: #F0F2F5;
+  --bg-active: #E6E9F0;
+  
+  --border-color: #E3E3E3;
+  --border-light: #EAEAEA;
+  
+  --text-primary: #0D1846;
+  --text-secondary: #58638A;
+  --text-muted: #8E98B3;
+  --text-light: #FFFFFF;
+  
+  /* Typography */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-title: 'Outfit', 'Inter', sans-serif;
+  
+  /* Layout Metrics */
+  --border-radius-lg: 12px;
+  --border-radius-md: 8px;
+  --border-radius-sm: 6px;
+  --transition-fast: 0.15s ease;
+  --transition-smooth: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  --sidebar-width: 260px;
+  --header-height: 64px;
+}
+
+/* Global Reset & Base */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* Custom Scrollbar to maintain clean aesthetics */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-off-white);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Common Layout Utilities */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  background-color: var(--bg-canvas);
+}
+
+/* Interactive elements scaling */
+button, .clickable {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  transition: transform var(--transition-fast) ease, opacity var(--transition-fast) ease;
+}
+
+button:active, .clickable:active {
+  transform: scale(0.97);
+}
+
+/* Notion Card Styling */
+.notion-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-lg);
+  padding: 20px;
+  transition: transform var(--transition-smooth), border-color var(--transition-fast);
+}
+
+.notion-card:hover {
+  border-color: var(--text-muted);
+}
+
+/* Priority Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.badge-high {
+  background-color: rgba(233, 86, 35, 0.1);
+  color: var(--color-orange);
+  border: 1px solid rgba(233, 86, 35, 0.2);
+}
+
+.badge-medium {
+  background-color: rgba(64, 110, 183, 0.1);
+  color: var(--color-blue);
+  border: 1px solid rgba(64, 110, 183, 0.2);
+}
+
+.badge-low {
+  background-color: rgba(88, 99, 138, 0.08);
+  color: var(--text-secondary);
+  border: 1px solid rgba(88, 99, 138, 0.15);
+}
+
+.badge-category {
+  background-color: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+}

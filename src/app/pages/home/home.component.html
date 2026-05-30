@@ -1,3 +1,548 @@
-<h1>{{ title }}</h1>
-<app-task-form></app-task-form>
-<app-task-list></app-task-list>
+<div class="app-container">
+  
+  <!-- SIDEBAR NAVIGATION (LEFT COLUMN) -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+      </div>
+      <div>
+        <h1 class="brand-title">Ndondomeko</h1>
+        <span class="brand-subtitle">Smart To-Do List</span>
+      </div>
+    </div>
+
+    <!-- User Profile Greeting widget -->
+    <div class="user-greeting-widget">
+      <div class="avatar">TP</div>
+      <div class="user-info">
+        <span class="greeting-lbl">{{ currentChichewaGreeting }}!</span>
+        <span class="username">Tapokera</span>
+      </div>
+    </div>
+
+    <!-- Search input -->
+    <div class="sidebar-search">
+      <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="text" [(ngModel)]="searchText" placeholder="Search tasks..." class="search-input" />
+    </div>
+
+    <!-- Section: Spaces / Categories -->
+    <div class="sidebar-section">
+      <span class="section-title">SPACES</span>
+      <ul class="sidebar-menu">
+        <li *ngFor="let cat of categoriesList" 
+            [class.active]="(selectedCategory$ | async) === cat"
+            (click)="selectCategory(cat)">
+          <span class="menu-dot" [class]="'dot-' + cat.toLowerCase()"></span>
+          <span class="menu-label">{{ cat }}</span>
+          <span class="menu-count" *ngIf="cat === 'All'">{{ (taskService.tasks$ | async)?.length }}</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Section: Modules & Pages -->
+    <div class="sidebar-section" style="margin-top: 20px;">
+      <span class="section-title">PLATFORM VIEWS</span>
+      <ul class="sidebar-menu">
+        <li [class.active]="activeView === 'dashboard'" (click)="toggleView('dashboard')">
+          <svg class="menu-icon" style="margin-right: 12px;" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span class="menu-label">Bento Dashboard</span>
+        </li>
+        <li [class.active]="activeView === 'notepad'" (click)="toggleView('notepad')">
+          <svg class="menu-icon" style="margin-right: 12px; color: var(--color-orange);" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/><path d="M6 6h10"/><path d="M6 10h10"/></svg>
+          <span class="menu-label">📓 Ideas Notepad</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Stat widget at bottom of sidebar -->
+    <div class="sidebar-progress-widget" *ngIf="stats$ | async as stats">
+      <div class="widget-header">
+        <span>Daily completion</span>
+        <span class="pct">{{ stats.percent }}%</span>
+      </div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-fill" [style.width.%]="stats.percent"></div>
+      </div>
+      <span class="widget-footer">{{ stats.completed }} of {{ stats.total }} completed</span>
+    </div>
+  </aside>
+
+  <!-- MAIN CANVAS (MIDDLE & RIGHT BENTO GRID) -->
+  <main class="main-content">
+    
+    <!-- TOP HEADER -->
+    <header class="content-header">
+      <div class="header-left">
+        <span class="today-date">{{ currentDayLabel }}</span>
+      </div>
+      
+      <div class="header-right">
+        <!-- AI Daily briefing quick toggle -->
+        <button class="briefing-toggle" (click)="generateDailySummary()">
+          <svg class="magic-wand" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3h-2"/></svg>
+          Get AI Briefing
+        </button>
+        <span class="divider"></span>
+        <div class="notification-bell">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          <span class="bell-badge"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Briefing text container (collapsible based on content presence) -->
+    <div class="ai-briefing-banner notion-card" *ngIf="aiSummaryText || aiSummaryLoading">
+      <div class="banner-header">
+        <div class="logo-cluster">
+          <svg class="magic-wand text-orange" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3h-2"/></svg>
+          <h4>Ndondomeko Smart Assistant</h4>
+        </div>
+        <button class="close-btn" (click)="aiSummaryText = ''">✕</button>
+      </div>
+      
+      <div class="banner-body">
+        <div class="loading-spinner-container" *ngIf="aiSummaryLoading">
+          <div class="spinner"></div>
+          <span>Analyzing your agenda...</span>
+        </div>
+        <p *ngIf="!aiSummaryLoading" class="summary-paragraph">{{ aiSummaryText }}</p>
+      </div>
+    </div>
+
+    <!-- BENTO GRID CANVAS -->
+    <div class="bento-grid" *ngIf="activeView === 'dashboard'">
+
+      <!-- COLUMN 1: FOCUS LIST (50% WIDTH) -->
+      <section class="bento-col col-main notion-card">
+        <div class="col-header">
+          <div class="col-title-group">
+            <h3 class="col-title">Today's Focus</h3>
+            <span class="active-category-tag badge badge-category">{{ selectedCategory$ | async }}</span>
+          </div>
+          <span class="task-count-indicator" *ngIf="filteredTasks$ | async as tasks">
+            {{ tasks.length }} task{{ tasks.length !== 1 ? 's' : '' }}
+          </span>
+        </div>
+
+        <!-- Smart NLP input box -->
+        <div class="smart-input-box">
+          <div class="input-row">
+            <input type="text" 
+                   [(ngModel)]="smartInputText" 
+                   (input)="onSmartInputChange()"
+                   (keyup.enter)="addSmartTask()"
+                   placeholder="Add smart task (e.g., meeting tomorrow at 10am urgent #work)..." 
+                   class="nlp-input" />
+            <button class="nlp-add-btn clickable" (click)="addSmartTask()" [disabled]="!smartInputText.trim()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+            </button>
+          </div>
+          
+          <!-- Live NLP parser feedback panel (wow factor) -->
+          <div class="nlp-live-feedback" *ngIf="parsedLivePreview">
+            <div class="feedback-label">
+              <svg class="magic-wand" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+              <span>AI Parser Live Preview:</span>
+            </div>
+            <div class="feedback-badges">
+              <span class="preview-badge parsed-title">Title: "{{ parsedLivePreview.title }}"</span>
+              <span class="preview-badge parsed-date" *ngIf="parsedLivePreview.dueDate">📅 {{ parsedLivePreview.dueDate === todayStr ? 'Today' : parsedLivePreview.dueDate }}</span>
+              <span class="preview-badge parsed-time" *ngIf="parsedLivePreview.dueTime">⏰ {{ parsedLivePreview.dueTime }}</span>
+              <span class="preview-badge parsed-priority" [class]="'priority-' + parsedLivePreview.priority">🔥 {{ parsedLivePreview.priority }}</span>
+              <span class="preview-badge parsed-category">📁 #{{ parsedLivePreview.category }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task List Items -->
+        <div class="tasks-scroll-container">
+          <div class="empty-state" *ngIf="(filteredTasks$ | async)?.length === 0">
+            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>
+            <p>No tasks found in this section.</p>
+            <span class="hint">Try typing something in the smart input bar above!</span>
+          </div>
+
+          <ul class="task-list">
+            <li class="task-row" 
+                *ngFor="let task of filteredTasks$ | async" 
+                [class.completed]="task.completed"
+                [class.selected]="selectedTaskForAi?.id === task.id"
+                (click)="selectTaskForAi(task)">
+              
+              <!-- Checkbox -->
+              <div class="checkbox-container" (click)="$event.stopPropagation(); toggleTask(task)">
+                <div class="custom-checkbox" [class.checked]="task.completed">
+                  <svg *ngIf="task.completed" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </div>
+              </div>
+
+              <!-- Main Task Core Details -->
+              <div class="task-body">
+                <span class="task-title">{{ task.title }}</span>
+                
+                <div class="task-meta-row">
+                  <!-- Category indicator -->
+                  <span class="task-cat-dot" [class]="'dot-' + task.category?.toLowerCase()"></span>
+                  <span class="task-cat-name">{{ task.category }}</span>
+
+                  <!-- Due details -->
+                  <span class="task-due-date" *ngIf="task.dueDate">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>
+                    {{ task.dueDate === todayStr ? 'Today' : task.dueDate }}
+                  </span>
+                  
+                  <span class="task-due-time" *ngIf="task.dueTime">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    {{ task.dueTime }}
+                  </span>
+
+                  <!-- Subtask count -->
+                  <span class="task-subtask-counter" *ngIf="task.subtasks && task.subtasks.length > 0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/><path d="m3 12 2 2 4-4"/></svg>
+                    {{ task.subtasks.length }} subtask{{ task.subtasks.length !== 1 ? 's' : '' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Priority Badge -->
+              <span class="badge" [class]="'badge-' + task.priority">{{ task.priority }}</span>
+
+              <!-- Trash deletion -->
+              <button class="task-delete-btn clickable" (click)="$event.stopPropagation(); deleteTask(task.id)">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="m19 6-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="m10 11 1 6"/><path d="m14 11-1 6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- COLUMN 2: TIMELINE TIME-BLOCKER (25% WIDTH) -->
+      <section class="bento-col col-calendar notion-card">
+        <div class="col-header">
+          <h3 class="col-title">Today's Timeline</h3>
+          <span class="timeline-date">{{ currentDayLabel }}</span>
+        </div>
+
+        <div class="timeline-container">
+          <!-- Horizontal Grid Lines representing Hour Blocks -->
+          <div class="timeline-hour-slot" *ngFor="let hourBlock of timelineHours">
+            <span class="hour-label">{{ hourBlock.label }}</span>
+            <div class="hour-line"></div>
+          </div>
+
+          <!-- Positioned absolute task timeline cards -->
+          <div class="timeline-absolute-cards-container">
+            <div class="timeline-task-card"
+                 *ngFor="let t of timelineTasks$ | async"
+                 [style.top]="getTimelineTaskTop(t.dueTime!)"
+                 [class.completed]="t.completed"
+                 [class.active-selected]="selectedTaskForAi?.id === t.id"
+                 (click)="selectTaskForAi(t)">
+              <div class="task-stripe" [class]="'stripe-' + t.priority"></div>
+              <div class="card-content">
+                <span class="t-title">{{ t.title }}</span>
+                <span class="t-time">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="12 6 12 12 16 14"/></svg>
+                  {{ t.dueTime }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COLUMN 3: AI BRAIN PANEL (25% WIDTH) -->
+      <section class="bento-col col-ai notion-card">
+        <div class="col-header">
+          <div class="ai-sparkle-logo">
+            <svg class="magic-wand" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/><path d="M5 6v4"/><path d="M19 14v4"/><path d="M10 2v2"/><path d="M7 8H3"/><path d="M21 16h-4"/><path d="M11 3h-2"/></svg>
+            <h3 class="col-title text-orange">AI Brain Workspace</h3>
+          </div>
+        </div>
+
+        <!-- Case 1: No Task Selected -->
+        <div class="ai-idle-state" *ngIf="!selectedTaskForAi">
+          <div class="brain-icon">🧠</div>
+          <h5>No Task Selected</h5>
+          <p>Highlight any task on the dashboard to trigger AI subtask breakdown, checklist details, and custom notes.</p>
+        </div>
+
+        <!-- Case 2: Selected Task Info Panel -->
+        <div class="ai-task-panel" *ngIf="selectedTaskForAi">
+          <div class="selected-task-header">
+            <span class="parent-category badge badge-category">{{ selectedTaskForAi.category }}</span>
+            <h4>{{ selectedTaskForAi.title }}</h4>
+            <p class="task-notes" *ngIf="selectedTaskForAi.notes">{{ selectedTaskForAi.notes }}</p>
+          </div>
+
+          <hr class="panel-divider" />
+
+          <!-- Interactive Action Buttons -->
+          <div class="panel-actions-row">
+            <button class="decompose-btn clickable" (click)="decomposeTask()" [disabled]="aiLoading">
+              <svg class="magic-wand" [class.spinning]="aiLoading" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+              {{ aiLoading ? 'Analyzing...' : 'AI Subtask Decomposer' }}
+            </button>
+          </div>
+
+          <!-- Dynamic suggestions from AI Decomposer -->
+          <div class="ai-suggestions-box" *ngIf="aiSuggestedSubtasks.length > 0">
+            <div class="sugg-header">
+              <span>AI Suggested Breakdown:</span>
+              <button class="add-all-sugg-btn clickable" (click)="acceptSubtasks()">Merge Checklist</button>
+            </div>
+            <ul class="sugg-list">
+              <li *ngFor="let sugg of aiSuggestedSubtasks">✨ {{ sugg }}</li>
+            </ul>
+          </div>
+
+          <!-- Existing Subtask Checklists -->
+          <div class="panel-subtasks-section">
+            <span class="sub-section-title">Checklist items</span>
+            
+            <ul class="panel-subtask-list">
+              <li class="panel-subtask-row" *ngFor="let sub of selectedTaskForAi.subtasks" [class.done]="sub.completed">
+                <div class="sub-checkbox" (click)="toggleSubtask(sub)" [class.checked]="sub.completed">
+                  <svg *ngIf="sub.completed" xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                </div>
+                <span class="sub-title">{{ sub.title }}</span>
+              </li>
+            </ul>
+
+            <!-- Custom Subtask Addition input -->
+            <div class="add-subtask-form">
+              <input type="text" 
+                     [(ngModel)]="newSubtaskTitle" 
+                     (keyup.enter)="addNewSubtask()"
+                     placeholder="Add custom checklist item..." 
+                     class="subtask-input" />
+              <button class="subtask-add-btn clickable" (click)="addNewSubtask()" [disabled]="!newSubtaskTitle.trim()">+</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- MODULAR NOTEPAD PAGE CANVAS -->
+    <div class="notepad-page-container" *ngIf="activeView === 'notepad'">
+      
+      <!-- NOTEPAD TOOLBAR / STYLING COMMANDS -->
+      <div class="notepad-toolbar notion-card">
+        <!-- Text styles -->
+        <div class="toolbar-group">
+          <button class="tool-btn" (click)="formatActiveBlock('bold')" [class.active]="selectedBlock?.bold" title="Bold"><b>B</b></button>
+          <button class="tool-btn" (click)="formatActiveBlock('italic')" [class.active]="selectedBlock?.italic" title="Italic"><i>I</i></button>
+          
+          <span class="tool-divider"></span>
+          
+          <!-- Font style -->
+          <button class="tool-btn font-sans-btn" (click)="formatActiveBlock('sans')" [class.active]="selectedBlock?.fontFamily === 'sans'" title="Sans Font">Sans</button>
+          <button class="tool-btn font-serif-btn" (click)="formatActiveBlock('serif')" [class.active]="selectedBlock?.fontFamily === 'serif'" title="Serif Font">Serif</button>
+          <button class="tool-btn font-mono-btn" (click)="formatActiveBlock('mono')" [class.active]="selectedBlock?.fontFamily === 'mono'" title="Mono Font">Mono</button>
+        </div>
+
+        <span class="tool-divider"></span>
+
+        <!-- Color Styling -->
+        <div class="toolbar-group">
+          <button class="tool-btn color-navy-btn" (click)="formatActiveBlock('color-navy')" title="Navy text color">A</button>
+          <button class="tool-btn color-orange-btn" (click)="formatActiveBlock('color-orange')" title="Orange text color">A</button>
+          <button class="tool-btn color-blue-btn" (click)="formatActiveBlock('color-blue')" title="Blue text color">A</button>
+          <button class="tool-btn" (click)="formatActiveBlock('color-clear')" title="Clear text color">✕</button>
+          
+          <span class="tool-divider"></span>
+          
+          <button class="tool-btn bg-orange-btn" (click)="formatActiveBlock('bg-orange')" title="Background Highlight">Highlight</button>
+          <button class="tool-btn" (click)="formatActiveBlock('bg-clear')" title="Clear Highlight">✕</button>
+        </div>
+
+        <span class="tool-divider"></span>
+
+        <!-- AI commands -->
+        <div class="toolbar-group" *ngIf="selectedBlock && (selectedBlock.type === 'text' || selectedBlock.type === 'heading-1')">
+          <button class="ai-tool-btn translate-btn" (click)="runBlockAiTranslate(selectedBlock)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>
+            Translate (Chichewa)
+          </button>
+          <button class="ai-tool-btn rephrase-btn" (click)="runBlockAiRephrase(selectedBlock)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z"/><path d="m14 7 3 3"/></svg>
+            AI Rephrase
+          </button>
+        </div>
+
+        <!-- Add Blocks selectors -->
+        <div class="toolbar-group right-align-group" style="margin-left: auto;">
+          <button class="tool-btn add-block-btn" (click)="addBlock('text')" title="Add paragraph block">+ Paragraph</button>
+          <button class="tool-btn add-block-btn" (click)="addBlock('heading-1')" title="Add Heading">+ H1</button>
+          <button class="tool-btn add-block-btn" (click)="addBlock('bullet')" title="Add Bullet list">+ Bullet</button>
+          <span class="tool-divider"></span>
+          <button class="tool-btn add-block-btn orange-highlight" (click)="addBlock('calendar-embed')" title="Embed Live Calendar">+ Calendar</button>
+          <button class="tool-btn add-block-btn blue-highlight" (click)="addBlock('graph-embed')" title="Embed Completion Graph">+ Graph</button>
+        </div>
+      </div>
+
+      <!-- MAIN PAGE CANVAS CARD -->
+      <div class="notepad-canvas notion-card">
+        <!-- Page title header -->
+        <div class="canvas-header">
+          <span class="page-emoji">📓</span>
+          <input type="text" [(ngModel)]="notepadPageTitle" class="notepad-page-title-input" />
+        </div>
+
+        <!-- Block List -->
+        <div class="blocks-container">
+          <div class="block-wrapper" 
+               *ngFor="let block of notepadBlocks"
+               [class.selected]="selectedBlock?.id === block.id">
+            
+            <!-- Left block handle gutter for actions -->
+            <div class="block-gutter">
+              <button class="gutter-action-btn delete-btn" (click)="deleteBlock(block.id)" title="Delete block">✕</button>
+            </div>
+
+            <!-- Block dynamic rendering based on block type -->
+            <div class="block-content-area">
+              
+              <!-- 1. Text paragraph block -->
+              <div *ngIf="block.type === 'text'"
+                   contenteditable="true"
+                   (blur)="updateBlockContent(block.id, $event)"
+                   (click)="selectBlock(block)"
+                   [style.font-weight]="block.bold ? 'bold' : 'normal'"
+                   [style.font-style]="block.italic ? 'italic' : 'normal'"
+                   [style.color]="block.color"
+                   [style.background]="block.background"
+                   [class]="'font-' + (block.fontFamily || 'sans')"
+                   class="block-editable text-block">
+                {{ block.content }}
+              </div>
+
+              <!-- 2. Heading 1 block -->
+              <h1 *ngIf="block.type === 'heading-1'"
+                  contenteditable="true"
+                  (blur)="updateBlockContent(block.id, $event)"
+                  (click)="selectBlock(block)"
+                  [style.font-weight]="block.bold ? 'bold' : 'normal'"
+                  [style.font-style]="block.italic ? 'italic' : 'normal'"
+                  [style.color]="block.color"
+                  [style.background]="block.background"
+                  [class]="'font-' + (block.fontFamily || 'sans')"
+                  class="block-editable heading-1-block">
+                {{ block.content }}
+              </h1>
+
+              <!-- 3. Bullet-list block -->
+              <div *ngIf="block.type === 'bullet'" class="bullet-wrapper">
+                <span class="bullet-dot">•</span>
+                <div contenteditable="true"
+                     (blur)="updateBlockContent(block.id, $event)"
+                     (click)="selectBlock(block)"
+                     [style.font-weight]="block.bold ? 'bold' : 'normal'"
+                     [style.font-style]="block.italic ? 'italic' : 'normal'"
+                     [style.color]="block.color"
+                     [style.background]="block.background"
+                     [class]="'font-' + (block.fontFamily || 'sans')"
+                     class="block-editable bullet-block">
+                  {{ block.content }}
+                </div>
+              </div>
+
+              <!-- 4. Calendar View Embed (DYNAMIC MODULE INTEGRATION!) -->
+              <div *ngIf="block.type === 'calendar-embed'" class="calendar-embed-container" (click)="selectBlock(block)">
+                <div class="embed-header">
+                  <div class="header-tag">📅 Dynamic Live Timeline Calendar Embed</div>
+                  <span class="live-status">LIVE SYNCED</span>
+                </div>
+                
+                <!-- Timeline Calendar inside Document Page -->
+                <div class="embedded-calendar-grid">
+                  <!-- Row 1: Days label -->
+                  <div class="cal-day-label" *ngFor="let day of ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']">{{ day }}</div>
+                  
+                  <!-- Calendar mock dates showing tasks from global engine -->
+                  <div class="cal-date-cell" *ngFor="let d of [25, 26, 27, 28, 29, 30, 31, 1, 2, 3, 4, 5, 6, 7]">
+                    <span class="date-num" [class.today-circle]="d === 30">{{ d }}</span>
+                    
+                    <!-- Display matched task triggers in calendar slots -->
+                    <div class="cal-cell-tasks">
+                      <div class="cal-task-mini-pill stripe-high" *ngIf="d === 30" title="Review Ndondomeko design system">
+                        Review Design
+                      </div>
+                      <div class="cal-task-mini-pill stripe-high" *ngIf="d === 31" title="Submit Chikonzero project proposal">
+                        Chikonzero
+                      </div>
+                      <div class="cal-task-mini-pill stripe-medium" *ngIf="d === 30" title="Malawi AI comunitity meeting">
+                        AI Community
+                      </div>
+                      <div class="cal-task-mini-pill stripe-low" *ngIf="d === 2" title="Deploy Ndondomeko to production">
+                        Deploy Prod
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 5. Completion SVG Graph Embed (DYNAMIC ANALYTICS MODULE INTEGRATION!) -->
+              <div *ngIf="block.type === 'graph-embed'" class="graph-embed-container" (click)="selectBlock(block)">
+                <div class="embed-header">
+                  <div class="header-tag">📊 Dynamic Productivity Statistics Embed</div>
+                  <span class="live-status">LIVE UPDATING</span>
+                </div>
+                
+                <!-- Inline SVG column chart drawing completed work stats dynamically -->
+                <div class="embedded-graph-panel" *ngIf="stats$ | async as stats">
+                  <div class="graph-left-summary">
+                    <div class="summary-metric">
+                      <span class="val">{{ stats.completed }}</span>
+                      <span class="lbl">Tasks Finished</span>
+                    </div>
+                    <div class="summary-metric">
+                      <span class="val">{{ stats.percent }}%</span>
+                      <span class="lbl">Completion rate</span>
+                    </div>
+                  </div>
+
+                  <!-- Column Chart SVG -->
+                  <div class="graph-svg-wrapper">
+                    <svg viewBox="0 0 320 180" width="100%" height="100%">
+                      <!-- Grid lines -->
+                      <line x1="40" y1="30" x2="300" y2="30" stroke="#EAEAEA" stroke-width="1" stroke-dasharray="4" />
+                      <line x1="40" y1="80" x2="300" y2="80" stroke="#EAEAEA" stroke-width="1" stroke-dasharray="4" />
+                      <line x1="40" y1="130" x2="300" y2="130" stroke="#EAEAEA" stroke-width="1" />
+                      
+                      <!-- Y axis labels -->
+                      <text x="30" y="34" font-size="8" fill="#8E98B3" text-anchor="end">100%</text>
+                      <text x="30" y="84" font-size="8" fill="#8E98B3" text-anchor="end">50%</text>
+                      <text x="30" y="134" font-size="8" fill="#8E98B3" text-anchor="end">0%</text>
+                      
+                      <!-- Column 1: Work (Completion rate high) -->
+                      <rect x="65" [attr.y]="130 - (stats.completed > 0 ? 80 : 10)" width="28" [attr.height]="stats.completed > 0 ? 80 : 10" rx="4" fill="var(--color-blue)" />
+                      <text x="79" y="145" font-size="8" font-weight="600" fill="#58638A" text-anchor="middle">Work</text>
+                      
+                      <!-- Column 2: Studies (Completion rate moderate) -->
+                      <rect x="125" y="70" width="28" height="60" rx="4" fill="var(--color-orange)" />
+                      <text x="139" y="145" font-size="8" font-weight="600" fill="#58638A" text-anchor="middle">Studies</text>
+                      
+                      <!-- Column 3: Personal (No completion) -->
+                      <rect x="185" y="115" width="28" height="15" rx="4" fill="#E3E3E3" />
+                      <text x="199" y="145" font-size="8" font-weight="600" fill="#58638A" text-anchor="middle">Personal</text>
+                      
+                      <!-- Column 4: Inbox (Empty state) -->
+                      <rect x="245" y="125" width="28" height="5" rx="4" fill="#E3E3E3" />
+                      <text x="259" y="145" font-size="8" font-weight="600" fill="#58638A" text-anchor="middle">Inbox</text>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </main>
+</div>
